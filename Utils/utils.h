@@ -1,4 +1,5 @@
 #include "TVector2.h"
+#include "TLorentzVector.h"
 
 // Collection of geometry-related helper functions.
 //
@@ -25,16 +26,16 @@ namespace utils {
   //  - false : otherwise. In that case, 'matchedObjIdx == -1'
   // If deltaRMax is specified, it is in addition required  that 
   // the objects are closer than deltaRMax.
-  bool findMatchedObject(int &matchedObjIdx,float eta, float phi, const float* objEtas, const float* objPhis, int nObj, double deltaRMax = 100000.) {
+  bool findMatchedObject(int &matchedObjIdx,float eta, float phi, const std::vector<TLorentzVector> & objVec, double deltaRMax = 100000.) {
     matchedObjIdx = -1;
     double deltaRMin = 100000.;
-    for(int objIdx = 0; objIdx < nObj; ++objIdx) { // Loop over objects
-      const double dr = deltaR(eta,objEtas[objIdx],phi,objPhis[objIdx]);
-      if( dr < deltaRMin ) {
-	deltaRMin = dr;
-	matchedObjIdx = objIdx;
-      }
-    } // End of loop over objects
+    for(int io=0; io<(int)objVec.size(); io++){
+       const double dr = deltaR(eta, objVec[io].Eta(), phi, objVec[io].Phi());
+       if( dr < deltaRMin ) {
+          deltaRMin = dr;
+          matchedObjIdx = io;
+       }
+    }
 
     bool match = false;
     if( deltaRMin < deltaRMax ) {

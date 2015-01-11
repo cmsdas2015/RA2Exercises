@@ -15,8 +15,8 @@ void plotYields() {
 
 
 
-  const int kNSamples = 4;
-  unsigned int ids[kNSamples] = { 11, 12, 13, 14 };
+  const int kNSamples = 6;
+  unsigned int ids[kNSamples] = { 11, 12, 13, 14, 21, 22 };
 
   TH1* hYields[kNSamples];
   for(int s = 0; s < kNSamples; ++s) { // Loop over samples

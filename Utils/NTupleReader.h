@@ -6,6 +6,8 @@
 #include "TTree.h"
 #include "TLorentzVector.h"
 
+#include "TStopwatch.h"
+
 #include <vector>
 #include <cstdio>
 #include <map>
@@ -39,6 +41,8 @@ static const double      dphiArr[] = {   -1,       5.0,      30,    -1  };
 
 static const double expectedLumi = 5000; // in pb-1 --> equivalent to 5 fb-1
 
+TStopwatch timer;
+
 using namespace std;
 
 class NTupleReader
@@ -68,12 +72,13 @@ public:
 
     int getNEntries()
     {
-        if(tree_) return tree_->GetEntries();
-        else 
+        if(tree_ && totEntries_ == -1 ) totEntries_ = tree_->GetEntries();
+        else if( !tree_ )
         {
             printf("NTupleReader::getNEntries() - NO tree defined yet!!!\n");
             return -1;
         }
+        return totEntries_;
     }
 
     bool getNextEvent();
@@ -92,10 +97,14 @@ public:
 
     vector<double> calcDPhi(const vector<TLorentzVector> &inputJets, const double tmpmetphi, const int nDPhi, const double *jetCutsArr);
 
+    void setStartEvtIdx(int startIdx){ nevt_ = startIdx; }
+
 private:
     // private variabals for internal use
     TTree *tree_;
     int nevt_;
+
+    int totEntries_;
 
     // Map to hold branch list 
     std::map<std::string, void *> branchMap_;
@@ -109,6 +118,7 @@ NTupleReader::NTupleReader(TTree * tree)
 {
     tree_ = tree;
     nevt_ = 0;
+    totEntries_ = -1;
     clearTuple();
     
     //vectors must be initialized to 0 here to avoid segfaults.  This cannot be done 
@@ -146,87 +156,20 @@ void NTupleReader::populateBranchList()
     branchMap_["run"]   = &run;
     branchMap_["event"] = &event;
     branchMap_["lumi"]  = &lumi;   
-/* 
-    branchMap_["mht"]  = &mht;
-    branchMap_["mhtphi"]  = &mhtphi;
-    branchMap_["ht"]  = &ht;
-    branchMap_["met"]  = &met;
-    branchMap_["metphi"]  = &metphi;
-    branchMap_["dPhi0_CUT"]  = &dPhi0_CUT;
-    branchMap_["dPhi1_CUT"]  = &dPhi1_CUT;
-    branchMap_["dPhi2_CUT"]  = &dPhi2_CUT;
-    branchMap_["tru_npv"]  = &true_npv;
-    branchMap_["avg_npv"]  = &avg_npv;
-    branchMap_["bestTopJetMass"]  = &bestTopJetMass;
-    branchMap_["MT2"]  = &MT2;
-    branchMap_["mTbestTopJet"]  = &mTbestTopJet;
-    branchMap_["mTbJet"]  = &mTbJet;
-    branchMap_["linearCombmTbJetPlusmTbestTopJet"]  = &linearCombmTbJetPlusmTbestTopJet;
-    branchMap_["mTbestWJet"]  = &mTbestWJet;
-    branchMap_["mTbestbJet"]  = &mTbestbJet;
-    branchMap_["mTremainingTopJet"]  = &mTremainingTopJet;
-*/
     branchMap_["evtWeight"]  = &evtWeight;
-/*
-    branchMap_["nMuons_CUT"]  = &nMuons_CUT;
-    branchMap_["nMuons"]  = &nMuons;
-    branchMap_["nElectrons_CUT"]  = &nElectrons_CUT;
-    branchMap_["nElectrons"]  = &nElectrons;
-    branchMap_["nJets"]  = &nJets;
-    branchMap_["loose_nIsoTrks"]  = &loose_nIsoTrks;
-    branchMap_["nIsoTrks_CUT"]  = &nIsoTrks_CUT;
-    branchMap_["nJets_CUT"]  = &nJets_CUT;
-*/
     branchMap_["vtxSize"]  = &vtxSize;
-/*
-    branchMap_["npv"]  = &npv;
-    branchMap_["nm1"]  = &nm1;
-    branchMap_["n0"]  = &n0;
-    branchMap_["np1"]  = &np1;
-*/
-/*
-    branchMap_["bestTopJetIdx"]  = &bestTopJetIdx;
-    branchMap_["pickedRemainingCombfatJetIdx"]  = &pickedRemainingCombfatJetIdx;
-    branchMap_["remainPassCSVS"]  = &remainPassCSVS;
-*/
-//    branchMap_["muonsCharge"]  = &muonsCharge;
-//    branchMap_["muonsMtw"]  = &muonsMtw;
     branchMap_["muonsRelIso"]  = &muonsRelIso;
-//    branchMap_["elesCharge"]  = &elesCharge;
-//    branchMap_["elesMtw"]  = &elesMtw;
     branchMap_["elesRelIso"]  = &elesRelIso;
-/*
-    branchMap_["recoJetsBtag_0"]  = &recoJetsBtag_0;
-    branchMap_["trksForIsoVeto_charge"]  = &trksForIsoVeto_charge;
-    branchMap_["trksForIsoVeto_dz"]  = &trksForIsoVeto_dz;
-    branchMap_["loose_isoTrks_charge"]  = &loose_isoTrks_charge;
-    branchMap_["loose_isoTrks_dz"]  = &loose_isoTrks_dz;
-    branchMap_["loose_isoTrks_iso"]  = &loose_isoTrks_iso;
-    branchMap_["loose_isoTrks_mtw"]  = &loose_isoTrks_mtw;
-    branchMap_["recoJetsFlavor"]  = &recoJetsFlavor;
-*/
     branchMap_["genDecayIdxVec"]  = &genDecayIdxVec;
     branchMap_["genDecayPdgIdVec"]  = &genDecayPdgIdVec;
     branchMap_["genDecayMomIdxVec"]  = &genDecayMomIdxVec;
     branchMap_["W_emuVec"]  = &W_emuVec;
     branchMap_["W_tau_emuVec"]  = &W_tau_emuVec;
     branchMap_["W_tau_prongsVec"]  = &W_tau_prongsVec;
-/*
-    branchMap_["trksForIsoVeto_pdgId"]  = &trksForIsoVeto_pdgId;
-    branchMap_["trksForIsoVeto_idx"]  = &trksForIsoVeto_idx;
-    branchMap_["loose_isoTrks_pdgId"]  = &loose_isoTrks_pdgId;
-    branchMap_["loose_isoTrks_idx"]  = &loose_isoTrks_idx;
-    branchMap_["forVetoIsoTrksidx"]  = &forVetoIsoTrksidx;
-*/
-    branchMap_["genDecayStrVec"]  = &genDecayStrVec;
     branchMap_["muonsLVec"]  = &muonsLVec;
     branchMap_["elesLVec"]  = &elesLVec;
     branchMap_["jetsLVec"]  = &jetsLVec;
     branchMap_["genDecayLVec"]  = &genDecayLVec;
-/*
-    branchMap_["trksForIsoVetoLVec"]  = &trksForIsoVetoLVec;
-    branchMap_["loose_isoTrksLVec"]  = &loose_isoTrksLVec;
-*/
 }
 
 bool NTupleReader::getNextEvent()
@@ -243,7 +186,7 @@ bool NTupleReader::getNextEvent()
 
 void NTupleReader::clearTuple()
 {
-    run = lumi = event = 0;
+    run = lumi = event = -1;
     mht = mhtphi = ht = met = metphi = dPhi0_CUT = dPhi1_CUT = dPhi2_CUT = true_npv = avg_npv = 0.0;
     bestTopJetMass = MT2 = mTbestTopJet = mTbJet = linearCombmTbJetPlusmTbestTopJet = 0.0;
     mTbestWJet = mTbestbJet = mTremainingTopJet = evtWeight = 0.0;
@@ -257,10 +200,10 @@ int NTupleReader::countJets(const vector<TLorentzVector> &inputJets, const doubl
    const double minAbsEta = jetCutsArr[0], maxAbsEta = jetCutsArr[1], minPt = jetCutsArr[2], maxPt = jetCutsArr[3];
 
    int cntNJets =0;
-   for(unsigned int ij=0; ij<inputJets.size(); ij++){
+   for(unsigned int ij=0; ij<inputJets.size(); ++ij){
       double perjetpt = inputJets[ij].Pt(), perjeteta = inputJets[ij].Eta();
-      if(   ( minAbsEta == -1 || fabs(perjeteta) >= minAbsEta )
-         && ( maxAbsEta == -1 || fabs(perjeteta) < maxAbsEta )
+      if(   ( minAbsEta == -1 || std::abs(perjeteta) >= minAbsEta )
+         && ( maxAbsEta == -1 || std::abs(perjeteta) < maxAbsEta )
          && (     minPt == -1 || perjetpt >= minPt )
          && (     maxPt == -1 || perjetpt < maxPt ) ){
          cntNJets ++;
@@ -275,18 +218,18 @@ vector<double> NTupleReader::calcDPhi(const vector<TLorentzVector> &inputJets, c
 
    int cntNJets =0;
    vector<double> outDPhiVec(nDPhi, 999);
-   for(unsigned int ij=0; ij<inputJets.size(); ij++){
+   for(unsigned int ij=0; ij<inputJets.size(); ++ij){
       double perjetpt = inputJets[ij].Pt(), perjeteta = inputJets[ij].Eta();
-      if(   ( minAbsEta == -1 || fabs(perjeteta) >= minAbsEta )
-         && ( maxAbsEta == -1 || fabs(perjeteta) < maxAbsEta )
+      if(   ( minAbsEta == -1 || std::abs(perjeteta) >= minAbsEta )
+         && ( maxAbsEta == -1 || std::abs(perjeteta) < maxAbsEta )
          && (     minPt == -1 || perjetpt >= minPt )
          && (     maxPt == -1 || perjetpt < maxPt ) ){
 
          if( cntNJets < nDPhi ){
-            double perDPhi = fabs(TVector2::Phi_mpi_pi( inputJets[ij].Phi() - tmpmetphi ));
+            double perDPhi = std::abs(TVector2::Phi_mpi_pi( inputJets[ij].Phi() - tmpmetphi ));
             outDPhiVec[cntNJets] = perDPhi;
          }
-         cntNJets ++;
+         ++ cntNJets;
       }
    }
    return outDPhiVec;
@@ -294,7 +237,7 @@ vector<double> NTupleReader::calcDPhi(const vector<TLorentzVector> &inputJets, c
 
 double NTupleReader::calcHT(const vector<TLorentzVector> &inputJets, const double *jetCutsArr){
    double HT = 0;
-   for(unsigned int ij=0; ij<inputJets.size(); ij++){
+   for(unsigned int ij=0; ij<inputJets.size(); ++ij){
       vector<TLorentzVector> dummyVec; dummyVec.push_back(inputJets.at(ij));
       if( !countJets(dummyVec, jetCutsArr) ) continue;
       HT += inputJets.at(ij).Pt();
@@ -304,7 +247,7 @@ double NTupleReader::calcHT(const vector<TLorentzVector> &inputJets, const doubl
 
 vector<double> NTupleReader::calcMHTxy(const vector<TLorentzVector> &inputJets, const double *jetCutsArr){
    double MHTx = 0, MHTy = 0;
-   for(unsigned int ij=0; ij<inputJets.size(); ij++){
+   for(unsigned int ij=0; ij<inputJets.size(); ++ij){
       vector<TLorentzVector> dummyVec; dummyVec.push_back(inputJets.at(ij));
       if( !countJets(dummyVec, jetCutsArr) ) continue;
       MHTx -= inputJets.at(ij).Px();
@@ -317,7 +260,7 @@ vector<double> NTupleReader::calcMHTxy(const vector<TLorentzVector> &inputJets, 
 
 double NTupleReader::calcMHT(const vector<TLorentzVector> &inputJets, const double *jetCutsArr){
    double MHTx = 0, MHTy = 0;
-   for(unsigned int ij=0; ij<inputJets.size(); ij++){
+   for(unsigned int ij=0; ij<inputJets.size(); ++ij){
       vector<TLorentzVector> dummyVec; dummyVec.push_back(inputJets.at(ij));
       if( !countJets(dummyVec, jetCutsArr) ) continue;
       MHTx -= inputJets.at(ij).Px();

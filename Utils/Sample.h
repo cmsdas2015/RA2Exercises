@@ -22,7 +22,7 @@ public:
   static TString toTString(unsigned int id);
 
   // Ntuple file name
-  static std::vector<TString> fileNameFullSample(unsigned int id, std::vector<double> &xSecVec);
+  static std::vector<TString> fileNameFullSample(unsigned int id, std::vector<double> &xSecVec, std::vector<int> &nEvtVec);
 
   // Ntuple file name of a small subset of the full sample
   // for quick tests
@@ -46,11 +46,12 @@ private:
 };
 
 
-TString Sample::path_ = "root://cmseos:1094//eos/uscms/store/user/lpcsusyhad/PHYS14_720_Dec23_2014/";
+//TString Sample::path_ = "root://cmseos:1094//eos/uscms/store/user/lpcsusyhad/PHYS14_720_Dec23_2014/";
+TString Sample::path_ = "root://cmseos:1094//eos/uscms/store/user/lpcsusyhad/CMSDAS2015/";
 //TString Sample::path_ = "root://cmsxrootd-site.fnal.gov//store/user/lpcsusyhad/PHYS14_720_Dec23_2014/";
 
-std::vector<TString> Sample::fileNameFullSample(unsigned int id, std::vector<double> &xSecVec) {
-  xSecVec.clear();
+std::vector<TString> Sample::fileNameFullSample(unsigned int id, std::vector<double> &xSecVec, std::vector<int> &nEvtVec) {
+  xSecVec.clear(); nEvtVec.clear();
   checkId(id);
 
   std::vector<TString> nameVec;
@@ -59,23 +60,23 @@ std::vector<TString> Sample::fileNameFullSample(unsigned int id, std::vector<dou
 //  else if( id ==  2  ) name += "MuHad.root";
 
   if( id == 11  ){
-     name = path_+"benwu/PU20bx25_WJetsToLNu_HT-400to600_madgraph-tauola/WJetsToLNu_HT-400to600_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141224_220815/0000/*.root"; nameVec.push_back(name); xSecVec.push_back(55.61);
-     name = path_+"benwu/PU20bx25_WJetsToLNu_HT-600toInf_madgraph-tauola/WJetsToLNu_HT-600toInf_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141229_230015/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(18.81);
+     name = path_+"PU20bx25_WJetsToLNu_HT-200to400_madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(471.6); nEvtVec.push_back(4686783);
+     name = path_+"PU20bx25_WJetsToLNu_HT-400to600_madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(55.61); nEvtVec.push_back(4640594);
+     name = path_+"PU20bx25_WJetsToLNu_HT-600toInf_madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(18.81); nEvtVec.push_back(4581841);
   } else if( id == 12  ){
-     name = path_+"lhx/PU20bx25_TTJets_MSDecaysCKM_madgraph-tauola/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141224_052628/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(818.8);
+     name = path_+"PU20bx25_TTJets_MSDecaysCKM_madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(818.8); nEvtVec.push_back(25446993);
   } else if( id == 13 ){
-     name = path_+"pastika/ZJetsToNuNu_HT-600toInf_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141227_223010/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(4.113);
+     name = path_+"PU20bx25_ZJetsToNuNu_HT-200to400-madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(100.8); nEvtVec.push_back(4546470);
+     name = path_+"PU20bx25_ZJetsToNuNu_HT-400to600-madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(11.99); nEvtVec.push_back(4433784);
+     name = path_+"PU20bx25_ZJetsToNuNu_HT-600toInf-madgraph-tauola/*.root"; nameVec.push_back(name); xSecVec.push_back(4.113); nEvtVec.push_back(4463806);
   } else if( id == 14 ){
-     name = path_+"malik/PU20bx25_QCD_HT_250To500_13TeV-madgraph_V1_ext1-v2/QCD_HT_250To500_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141225_194319/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(670500);
-     name = path_+"malik/PU20bx25_QCD_HT_500To1000_13TeV-madgraph_V1_ext1-v1/QCD_HT-500To1000_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141225_201220/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(26740);
-     name = path_+"malik/PU20bx25_QCD_HT_1000ToInf_13TeV-madgraph_V1_ext1-v1/QCD_HT_1000ToInf_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141225_194928/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(769.7);
-//     name = path_+"malik/PU20bx25_QCD_HT_250To500_13TeV-madgraph*/QCD_HT_250To500_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/*/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(670500);
-//     name = path_+"malik/PU20bx25_QCD_HT_500To1000_13TeV-madgraph*/QCD_HT_500To1000_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/*/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(26740);
-//     name = path_+"malik/PU20bx25_QCD_HT_1000ToInf_13TeV-madgraph*/QCD_HT_1000ToInf_13TeV-madgraph/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/*/0000/stopFlatNtuples_*.root"; nameVec.push_back(name); xSecVec.push_back(769.7);
+     name = path_+"PU20bx25_QCD_HT_250to500_13TeV-madgraph/*.root"; nameVec.push_back(name); xSecVec.push_back(670500); nEvtVec.push_back(2004219+663953);
+     name = path_+"PU20bx25_QCD_HT_500to1000_13TeV-madgraph/*.root"; nameVec.push_back(name); xSecVec.push_back(26740); nEvtVec.push_back(3214312+849033);
+     name = path_+"PU20bx25_QCD_HT_1000toInf_13TeV-madgraph/*.root"; nameVec.push_back(name); xSecVec.push_back(769.7); nEvtVec.push_back(1130720+333733);
   } else if( id == 21  ){
-     name = path_+"lhx/PU20bx25_T1tttt_mGl-1500_mLSP-100-madgraph-tauola/SMS-T1tttt_2J_mGl-1500_mLSP-100_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141225_024211/0000/stopFlatNtuples_1.root"; nameVec.push_back(name); xSecVec.push_back(0.0141903);
+     name = path_+"PU20bx25_T1tttt_mGl-1500_mLSP-100-madgraph-tauola/slimmed_stopFlatNtuples_1.root"; nameVec.push_back(name); xSecVec.push_back(0.0141903); nEvtVec.push_back(105679);
   } else if( id == 22  ){
-     name = path_+"lhx/PU20bx25_T1tttt_mGl-1200_mLSP-800-madgraph-tauola/SMS-T1tttt_2J_mGl-1200_mLSP-800_Tune4C_13TeV-madgraph-tauola/PHYS14_PU20bx25_PHYS14_25_V1-FLAT/141225_023727/0000/stopFlatNtuples_1.root"; nameVec.push_back(name); xSecVec.push_back(0.0856418);
+     name = path_+"PU20bx25_T1tttt_mGl-1200_mLSP-800-madgraph-tauola/slimmed_stopFlatNtuples_1.root"; nameVec.push_back(name); xSecVec.push_back(0.0856418); nEvtVec.push_back(100322);
   }
 
   return nameVec;
@@ -110,8 +111,8 @@ TString Sample::label(unsigned int id) {
   else if( id == 12  ) label += "t#bar{t}+Jets";
   else if( id == 13  ) label += "Z(#nu#bar{#nu})+Jets";
   else if( id == 14  ) label += "QCD";
-  else if( id == 21  ) label += "LM6";
-  else if( id == 22  ) label += "LM9";
+  else if( id == 21  ) label += "T1tttt(1500,100)";
+  else if( id == 22  ) label += "T1tttt(1200,800)";
 
   return label;
 }
@@ -127,8 +128,8 @@ TString Sample::toTString(unsigned int id) {
   else if( id == 12  ) str += "TTJets";
   else if( id == 13  ) str += "ZJets";
   else if( id == 14  ) str += "QCD";
-  else if( id == 21  ) str += "LM6";
-  else if( id == 22  ) str += "LM9";
+  else if( id == 21  ) str += "T1tttt_1500_100";
+  else if( id == 22  ) str += "T1tttt_1200_800";
 
   return str;
 }

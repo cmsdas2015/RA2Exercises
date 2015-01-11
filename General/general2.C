@@ -82,8 +82,8 @@ void general2(unsigned int id, int nEvts = -1) {
     hYields->GetXaxis()->SetBinLabel(bin,label);
   }
 
-  std::vector<double> xSecVec;
-  std::vector<TString> samples = Sample::fileNameFullSample(id, xSecVec);
+  std::vector<double> xSecVec; std::vector<int> nEvtVec;
+  std::vector<TString> samples = Sample::fileNameFullSample(id, xSecVec, nEvtVec);
 
   for(unsigned int is=0; is<samples.size(); is++){
 
@@ -95,10 +95,10 @@ void general2(unsigned int id, int nEvts = -1) {
      int toProcessedEvts = nEvts;
      if( nEvts == -1 ) toProcessedEvts = ntper.getNEntries();
 
-     double scaleToLumi = xSecVec[is]*expectedLumi/toProcessedEvts;
+     double scaleToLumi = xSecVec[is]*expectedLumi/nEvtVec[is];
 
      std::cout<<"\nProcessing sample : "<<samples[is]<<std::endl;
-     std::cout<<"toProcessedEvts : "<<toProcessedEvts<<"  xSec : "<<xSecVec[is]<<"  expectedLumi : "<<expectedLumi<<"  scaleToLumi : "<<scaleToLumi<<std::endl;
+     std::cout<<"toProcessedEvts : "<<toProcessedEvts<<"  xSec : "<<xSecVec[is]<<"  oriTotEvt : "<<nEvtVec[is]<<"  expectedLumi : "<<expectedLumi<<"  scaleToLumi : "<<scaleToLumi<<std::endl;
 
      while(ntper.getNextEvent()){
 
@@ -152,6 +152,9 @@ void general2(unsigned int id, int nEvts = -1) {
     // Apply the delta-phi cuts
         if( !Selection::deltaPhi(dphiVec[0],dphiVec[1],dphiVec[2]) ) continue;
 
+// Skipping one problematic QCD event in the low HT sample (MHT ~ 715.595 GeV)
+        if( id == 14 && is ==0 && ntper.run == 1 && ntper.lumi == 119397 && ntper.event == 11933645 ) continue;
+
     // Fill histograms
         hNJets->Fill(selNJet, weight);
         hHt->Fill(selHT, weight);
@@ -173,11 +176,8 @@ void general2(unsigned int id, int nEvts = -1) {
           hYields->Fill(searchBin,weight);
        }
      }
-
      if( chn ) delete chn;
   } // End of loop over events
-
-
 
   // --- Save the Histograms to File -----------------------------------
   TFile outFile("General_"+Sample::toTString(id)+"-Yields.root","RECREATE");

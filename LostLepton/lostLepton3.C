@@ -21,7 +21,7 @@
 #include "../Utils/Sample.h"
 #include "../Utils/Selection.h"
 
-
+#include "../Utils/NTupleReader.h"
 
 // === Declaration of Auxiliary Functions ==============================
 
@@ -75,8 +75,10 @@ void lostLepton3(unsigned int id = 11,
 
   // --- Analyse the events --------------------------------------------
 
-  // Interface to the event content
-  Event* evt = new Event(Sample::fileNameFullSample(id),nEvts);
+  std::vector<double> xSecVec; std::vector<int> nEvtVec;
+  std::vector<TString> samples = Sample::fileNameFullSample(id, xSecVec, nEvtVec);
+
+  std::cout<<std::endl; timer.Print(); timer.Start();
 
   // Interface to the muon acceptance maps
   LeptonAcceptance muonAcc(effName,LeptonAcceptance::nameMuonAcc());
@@ -86,21 +88,67 @@ void lostLepton3(unsigned int id = 11,
   LeptonEfficiency muonIsoEff(effName,LeptonEfficiency::nameMuonIsoEff());
 
   // Loop over the events (tree entries)
-  while( evt->loadNext() ) {
+  for(unsigned int is=0; is<samples.size(); is++){
+
+     TChain * chn = new TChain("stopTreeMaker/AUX");
+     chn->Add(samples[is]);
+
+     NTupleReader ntper(chn);
+
+     int toProcessedEvts = nEvts;
+     if( nEvts == -1 ) toProcessedEvts = ntper.getNEntries();
+
+     double scaleToLumi = xSecVec[is]*expectedLumi/nEvtVec[is];
+
+     std::cout<<"\nProcessing sample : "<<samples[is]<<std::endl;
+     std::cout<<"toProcessedEvts : "<<toProcessedEvts<<"  xSec : "<<xSecVec[is]<<"  oriTotEvt : "<<nEvtVec[is]<<"  expectedLumi : "<<expectedLumi<<"  scaleToLumi : "<<scaleToLumi<<std::endl;
+
+     while(ntper.getNextEvent()){
+
+    // Calculate the jet-based RA2 selection variables
+        int selNJet = 0; // Number of jets with pt > 50 GeV and |eta| < 2.5 (`HT jets')
+        double selHT = 0; // HT, computed from jets with pt > 50 GeV and |eta| < 2.5 (`HT jets')
+        double selMHT = 0; // cmponents of MHT,  computed from jets with pt > 30 GeV (`MHT jets')
+        double selMHTx = 0, selMHTy = 0; // x-y cmponents of MHT,  computed from jets with pt > 30 GeV (`MHT jets')
+
+        selNJet = ntper.countJets();
+        selHT = ntper.calcHT();
+        selMHT = ntper.calcMHT();
+
+        vector<double> compMHTvec = ntper.calcMHTxy();
+        selMHTx = compMHTvec[0]; selMHTy = compMHTvec[1];
+
+        double phiMHT = std::atan2(selMHTy, selMHTx);
+
+        vector<double> dphiVec = ntper.calcDPhi( (*ntper.jetsLVec), phiMHT, 3, dphiArr);
+
+        double weight = 1.0;
+        weight *= ntper.evtWeight;
+        weight *= scaleToLumi;
 
     // Apply the NJets baseline-cut
-    if( !Selection::nJets(evt->nJets()) ) continue;
+        if( !Selection::nJets(selNJet) ) continue;
     // Apply the HT and MHT baseline-cuts
-    if( !Selection::ht(evt->ht()) ) continue;
-    if( !Selection::mht(evt->mht()) ) continue;
+        if( !Selection::ht(selHT) ) continue;
+        if( !Selection::mht(selMHT) ) continue;
     // Apply the delta-phi cuts
-    if( !Selection::deltaPhi(evt->deltaPhi1(),evt->deltaPhi2(),evt->deltaPhi3()) ) continue;
+        if( !Selection::deltaPhi(dphiVec[0],dphiVec[1],dphiVec[2]) ) continue;
 
     // Find the search bin (tighter than baseline selection) this event falls into
-    const unsigned int searchBin = Selection::searchBin(evt->ht(),evt->mht(),evt->nJets());
+        const unsigned int searchBin = Selection::searchBin(selHT,selMHT,selNJet);
 
+        int selMuons = 0;
+        TLorentzVector selMuonLVec;
+        for(unsigned int im=0; im<ntper.muonsLVec->size(); ++im){
+           if( ntper.muonsLVec->at(im).Pt() > 10 && std::abs(ntper.muonsLVec->at(im).Eta())<2.4 && ntper.muonsRelIso->at(im)
+<0.2 ){ ++selMuons; selMuonLVec = ntper.muonsLVec->at(im); }
+        }
+        int selElectrons = 0;
+        for(unsigned int ie=0; ie<ntper.elesLVec->size(); ie++){
+           if( ntper.elesLVec->at(ie).Pt() > 10 && std::abs(ntper.elesLVec->at(ie).Eta())<2.4 && ntper.elesRelIso->at(ie)<0.15 ) ++selElectrons;
+        }
 
-    if( evt->isoMuonsN() == 1 && evt->isoElectronsN() == 0 ) { 
+        if( selMuons == 1 && selElectrons == 0 ){
       // Select the control sample by requiring exactly one
       // well-reconstructed, isolated muon (and no electrons).
       // On this sample, we can perform the data-based prediction
@@ -108,40 +156,40 @@ void lostLepton3(unsigned int id = 11,
       // not well reconstructed, or not isolated.
 
       // Muon acceptance depends on the MHT and N(jets) of the event
-      const double muAcc     = muonAcc(evt->mht(),evt->nJets());
+           const double muAcc     = muonAcc(selMHT,selNJet);
       // Muon reconstruction and isolation efficiencies depend on
       // HT, MHT, and N(jets) of the event
-      const double muEffIso  = muonIsoEff(evt->ht(),evt->mht(),evt->nJets());
-      const double muEffReco = muonRecoEff(evt->ht(),evt->mht(),evt->nJets());
+           const double muEffIso  = muonIsoEff(selHT,selMHT,selNJet);
+           const double muEffReco = muonRecoEff(selHT,selMHT,selNJet);
 
       // The "lost-lepton weight": product of the probability for the muon
       // to be out-of acceptance, not reconstructed, or not isolated and
       // a correction to account for the fact that the control sample itself
       // contains only events with well-reconstructed, isolated muons inside
       // the acceptance.
-      const double llw = lostLeptonProb(muAcc,muEffReco,muEffIso) * controlSampleCorr(muAcc,muEffReco,muEffIso);
+           const double llw = lostLeptonProb(muAcc,muEffReco,muEffIso) * controlSampleCorr(muAcc,muEffReco,muEffIso);
 
       // To get a realistic prediction in case of MC, we multiply llw by
       // Event::weight() to normalise to 19.5/fb and the data pile-up
       // profile
-      const double fw = llw * evt->weight();
+           const double fw = llw * weight;
 
       // Predicted HT, MHT, N(jets) spectra
-      hHtPred->Fill(evt->ht(),fw);
-      hMhtPred->Fill(evt->mht(),fw);
-      hNJetsPred->Fill(evt->nJets(),fw);
+           hHtPred->Fill(selHT,fw);
+           hMhtPred->Fill(selMHT,fw);
+           hNJetsPred->Fill(selNJet,fw);
 
       // Predicted event yields      
-      hYieldsPred->Fill(0.,fw);	// After the baseline selection
-      if( searchBin > 0 ) hYieldsPred->Fill(searchBin,fw); // In the search bin
+           hYieldsPred->Fill(0.,fw);	// After the baseline selection
+           if( searchBin > 0 ) hYieldsPred->Fill(searchBin,fw); // In the search bin
 
       // For the control-sample statistics
-      hMuonPt->Fill(evt->isoMuonsPt()[0],evt->weight());
-      hMuonEta->Fill(evt->isoMuonsEta()[0],evt->weight());
+           hMuonPt->Fill(selMuonLVec.Pt(),weight);
+           hMuonEta->Fill(selMuonLVec.Eta(),weight);
 
-    } else if( evt->isoMuonsN() == 0 ) {
+        } else if( selMuons == 0 ){
       
-      if ( id == 11 ) {
+           if ( id == 11 ) {
 	// In this case, we are running over W+jets MC and can perform
 	// a closure test: this is an event without well-reconstructed,
 	// isolated muons, i.e. it would enter the search region and
@@ -151,24 +199,40 @@ void lostLepton3(unsigned int id = 11,
 	// Select only events where the W decayed either
 	// - into a muon (pdgId 13)
 	// - into a tau (pdgId 15) that decays into a muon
-	const bool isWToMuon = evt->flgW() == 13;
-	const bool isWToTauToMuon = evt->flgW() == 15 && evt->flgTau() == 13;
-	if( isWToMuon || isWToTauToMuon ) {
-	  
-	  // True HT, MHT, N(jets) spectra
-	  hHt->Fill(evt->ht(),evt->weight());
-	  hMht->Fill(evt->mht(),evt->weight());
-	  hNJets->Fill(evt->nJets(),evt->weight());
-	  
-	  // True event yields      
-	  hYields->Fill(0.,evt->weight());	// After the baseline selection
-	  if( searchBin > 0 ) hYields->Fill(searchBin,evt->weight()); // In the search bin
-	  
-	}
-      }
-    }
+              TLorentzVector genMuLVec;
+              bool isWToMuon = false;
+              if( !ntper.W_emuVec->empty() ){
+                 if( ntper.W_emuVec->size() >1 ) std::cout<<"WARNING ... two W's (info from W_emuVec)?"<<std::endl;
+                 for(unsigned int iw=0; iw<ntper.W_emuVec->size(); iw++){
+                    if( abs(ntper.genDecayPdgIdVec->at(ntper.W_emuVec->at(iw))) == 13 ){ isWToMuon = true; genMuLVec = ntper.genDecayLVec->at(ntper.W_emuVec->at(iw)); }
+                 }
+              }
+              bool isWToTauToMuon = false;
+              if( !ntper.W_tau_emuVec->empty() ){
+                 if( ntper.W_tau_emuVec->size() >1 ) std::cout<<"WARNING ... two W's (info from W_tau_emuVec)?"<<std::endl;
+                 for(unsigned int iw=0; iw<ntper.W_tau_emuVec->size(); iw++){
+                    if( abs(ntper.genDecayPdgIdVec->at(ntper.W_tau_emuVec->at(iw))) == 13 ){ isWToTauToMuon = true; genMuLVec = ntper.genDecayLVec->at(ntper.W_tau_emuVec->at(iw)); }
+                 }
+              }
 
-  } // End of loop over events
+	      if( isWToMuon || isWToTauToMuon ) {
+	  
+	     // True HT, MHT, N(jets) spectra
+                 hHt->Fill(selHT,weight);
+                 hMht->Fill(selMHT,weight);
+                 hNJets->Fill(selNJet,weight);
+	  
+             // True event yields      
+                 hYields->Fill(0.,weight);	// After the baseline selection
+                 if( searchBin > 0 ) hYields->Fill(searchBin,weight); // In the search bin
+	  
+	      }
+           }
+        }
+     } // End of loop over events
+
+     if( chn ) delete chn;
+  }
 
   // --- Save the Histograms to File -----------------------------------
   const TString outName = ( id == 11 ) ? "LostLepton_ClosureMuon.root" : "LostLepton_DataPrediction.root";
@@ -186,11 +250,10 @@ void lostLepton3(unsigned int id = 11,
   outFile.Close();
 }
 
-
 double lostLeptonProb(double acc, double reco, double iso) {
-  return 1.;			// Dummy implementation
+  return (1.-acc) + acc*(1.-reco) + acc*reco*(1.-iso);
 }
 
 double controlSampleCorr(double acc, double reco, double iso) {
-  return 1.;			// Dummy implementation
+  return 1. / ( acc * reco * iso );
 }

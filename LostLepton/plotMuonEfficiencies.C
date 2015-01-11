@@ -5,6 +5,7 @@
 //         November 2013
 
 void plotMuonEfficiencies(const TString &fileName = "../data/LostLepton_MuonEfficienciesFromWJetMC.root") {
+  gROOT->ProcessLine(".L ../Utils/Sample.h+");
   gROOT->ProcessLine(".L ../Utils/StyleMatters.h+");
   gROOT->ProcessLine(".L ../Utils/HistReader.h+");
   gROOT->ProcessLine(".L ../Utils/LeptonEfficiency.h+");
@@ -17,6 +18,7 @@ void plotMuonEfficiencies(const TString &fileName = "../data/LostLepton_MuonEffi
   canAcc->cd();
   StyleMatters::adaptForColZ(canAcc);
   hAcc->Draw("colz");
+  canAcc->SaveAs("acc.png");
 
   for(unsigned int i = 0; i < LeptonEfficiency::numNJetBins(); ++i) {
     TH2* hRecoEff = static_cast<TH2*>(HistReader::get(fileName,LeptonEfficiency::nameMuonRecoEff(i)));
@@ -25,6 +27,7 @@ void plotMuonEfficiencies(const TString &fileName = "../data/LostLepton_MuonEffi
     canRecoEff->cd();
     StyleMatters::adaptForColZ(canRecoEff);
     hRecoEff->Draw("colz");
+    canRecoEff->SaveAs("reco_"+LeptonEfficiency::nJetBinId(i)+".png");
     
     TH2* hIsoEff = static_cast<TH2*>(HistReader::get(fileName,LeptonEfficiency::nameMuonIsoEff(i)));
     hIsoEff->SetTitle("#mu iso eff, "+LeptonEfficiency::nJetBinId(i));
@@ -32,5 +35,6 @@ void plotMuonEfficiencies(const TString &fileName = "../data/LostLepton_MuonEffi
     canIsoEff->cd();
     StyleMatters::adaptForColZ(canIsoEff);
     hIsoEff->Draw("colz");
+    canRecoEff->SaveAs("iso_"+LeptonEfficiency::nJetBinId(i)+".png");
   }
 }

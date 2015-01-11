@@ -81,8 +81,10 @@ void general1(unsigned int id, int nEvts = -1) {
   //  - jetsN()         : Number of well-reconstructed jets
   //  - jetsPt()        : Array of size jetsN() lsstoring the jets pt; likewise for eta and phi
 
-  std::vector<double> xSecVec;
-  std::vector<TString> samples = Sample::fileNameFullSample(id, xSecVec);
+  std::vector<double> xSecVec; std::vector<int> nEvtVec;
+  std::vector<TString> samples = Sample::fileNameFullSample(id, xSecVec, nEvtVec);
+
+  std::cout<<std::endl; timer.Print(); timer.Start();
 
   for(unsigned int is=0; is<samples.size(); is++){
      
@@ -91,13 +93,13 @@ void general1(unsigned int id, int nEvts = -1) {
 
      NTupleReader ntper(chn);
 
-     int toProcessedEvts = nEvts;
+     int toProcessedEvts = nEvts; 
      if( nEvts == -1 ) toProcessedEvts = ntper.getNEntries();
 
-     double scaleToLumi = xSecVec[is]*expectedLumi/toProcessedEvts;
+     double scaleToLumi = xSecVec[is]*expectedLumi/nEvtVec[is];
 
      std::cout<<"\nProcessing sample : "<<samples[is]<<std::endl;
-     std::cout<<"toProcessedEvts : "<<toProcessedEvts<<"  xSec : "<<xSecVec[is]<<"  expectedLumi : "<<expectedLumi<<"  scaleToLumi : "<<scaleToLumi<<std::endl;
+     std::cout<<"toProcessedEvts : "<<toProcessedEvts<<"  xSec : "<<xSecVec[is]<<"  oriTotEvt : "<<nEvtVec[is]<<"  expectedLumi : "<<expectedLumi<<"  scaleToLumi : "<<scaleToLumi<<std::endl;
 
      while(ntper.getNextEvent()){
 
@@ -108,14 +110,14 @@ void general1(unsigned int id, int nEvts = -1) {
         if( nevtProcessed == 1 || nevtProcessed == toProcessedEvts || nevtProcessed%(toProcessedEvts/10) ==0 ) std::cout<<"  processing the "<<nevtProcessed<<"th event"<<std::endl;
 
         int selMuons = 0;
-        for(unsigned int im=0; im<ntper.muonsLVec->size(); im++){
-           if( ntper.muonsLVec->at(im).Pt() > 10 && std::abs(ntper.muonsLVec->at(im).Eta())<2.4 && ntper.muonsRelIso->at(im)<0.2 ) selMuons++;
+        for(unsigned int im=0; im<ntper.muonsLVec->size(); ++im){
+           if( ntper.muonsLVec->at(im).Pt() > 10 && std::abs(ntper.muonsLVec->at(im).Eta())<2.4 && ntper.muonsRelIso->at(im)<0.2 ) ++selMuons;
         }
         int selElectrons = 0;
         for(unsigned int ie=0; ie<ntper.elesLVec->size(); ie++){
 //          bool isEB = std::abs(elesLVec->at(ie).Eta()) < 1.479 ? true : false;
 //           unsigned int idx = isEB ? 0 : 1;
-           if( ntper.elesLVec->at(ie).Pt() > 10 && std::abs(ntper.elesLVec->at(ie).Eta())<2.4 && ntper.elesRelIso->at(ie)<0.15 ) selElectrons++;
+           if( ntper.elesLVec->at(ie).Pt() > 10 && std::abs(ntper.elesLVec->at(ie).Eta())<2.4 && ntper.elesRelIso->at(ie)<0.15 ) ++selElectrons;
         }
         if( selMuons != 0 ) continue;
         if( selElectrons !=0 ) continue;
@@ -128,21 +130,21 @@ void general1(unsigned int id, int nEvts = -1) {
 
         selNJet = ntper.countJets();
         selHT = ntper.calcHT();
-        selMHT = ntper.calcMHT();
 
         vector<double> compMHTvec = ntper.calcMHTxy();
         selMHTx = compMHTvec[0]; selMHTy = compMHTvec[1];
-
+        
+        selMHT = sqrt(selMHTx*selMHTx + selMHTy*selMHTy);
         double phiMHT = std::atan2(selMHTy, selMHTx);
 
-        vector<double> dphiVec = ntper.calcDPhi( (*ntper.jetsLVec), phiMHT, 3, dphiArr); 
+        vector<double> dphiVec = ntper.calcDPhi( (*ntper.jetsLVec), phiMHT, 3, dphiArr ); 
 
         double weight = 1.0;
         weight *= ntper.evtWeight;
         weight *= scaleToLumi;
 
-        if( selNJet < 3 ) continue;
-       
+// Skipping one problematic QCD event in the low HT sample (MHT ~ 715.595 GeV)
+        if( id == 14 && is ==0 && ntper.run == 1 && ntper.lumi == 119397 && ntper.event == 11933645 ) continue;
     //>>> PLACE DELTA PHI COMPUTATION HERE
 
     // Fill histograms
@@ -155,11 +157,12 @@ void general1(unsigned int id, int nEvts = -1) {
            hJetEta.at(ih)->Fill(ntper.jetsLVec->at(ih).Eta(), weight);
            hJetPhi.at(ih)->Fill(ntper.jetsLVec->at(ih).Phi(), weight);
         }
-
         for(unsigned int ih=0; ih < hDeltaPhi.size(); ++ih) hDeltaPhi[ih]->Fill(dphiVec[ih], weight);
      }
 
      if(chn) delete chn;
+
+     std::cout<<std::endl; timer.Stop(); timer.Print(); timer.Continue();
   }
 
   // --- Save the Histograms to File -----------------------------------
