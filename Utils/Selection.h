@@ -42,7 +42,7 @@ unsigned int Selection::searchBin(double ht, double mht, unsigned int nJets) {
 
   if( nJets >= 8 ) {
     
-    } else if( ht > 1000 ) {
+    if( ht > 1000 ) {
 
       if(      mht > 200 && mht < 400 ) bin = 1;
       else if( mht > 400 && mht < 600 ) bin = 2;
