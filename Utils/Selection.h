@@ -40,74 +40,17 @@ public:
 unsigned int Selection::searchBin(double ht, double mht, unsigned int nJets) {
   unsigned int bin = 0;
 
-  if( nJets >= 3 && nJets <= 6 ) {
+  if( nJets >= 8 ) {
     
-    if( ht > 500 && ht < 800 ) {
+    } else if( ht > 1000 ) {
 
-      if(      mht > 200 && mht < 500 ) bin = 1;
-      else if( mht > 500 && mht < 750 ) bin = 2;
-      else if( mht > 750              ) bin = 3;
-
-    } else if( ht > 800  && ht < 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 4;
-      else if( mht > 500 && mht < 750 ) bin = 5;
-      else if( mht > 750              ) bin = 6;
-
-    } else if( ht > 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 7;
-      else if( mht > 500 && mht < 750 ) bin = 8;
-      else if( mht > 750              ) bin = 9;
+      if(      mht > 200 && mht < 400 ) bin = 1;
+      else if( mht > 400 && mht < 600 ) bin = 2;
+      else if( mht > 600 && mht < 800 ) bin = 3;
+      else if( mht > 800              ) bin = 4;
 
     }
     
-  } else if( nJets >= 7 && nJets <= 8 ) {
-    
-    if( ht > 500 && ht < 800 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 10;
-      else if( mht > 500 && mht < 750 ) bin = 11;
-      else if( mht > 750              ) bin = 12;
-
-    } else if( ht > 800  && ht < 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 13;
-      else if( mht > 500 && mht < 750 ) bin = 14;
-      else if( mht > 750              ) bin = 15;
-
-    } else if( ht > 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 16;
-      else if( mht > 500 && mht < 750 ) bin = 17;
-      else if( mht > 750              ) bin = 18;
-
-    }
-
-  } else if( nJets >= 9 ) {
-    
-    if( ht > 500 && ht < 800 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 19;
-      else if( mht > 500 && mht < 750 ) bin = 20;
-      else if( mht > 750              ) bin = 21;
-
-    } else if( ht > 800  && ht < 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 22;
-      else if( mht > 500 && mht < 750 ) bin = 23;
-      else if( mht > 750              ) bin = 24;
-
-    } else if( ht > 1200 ) {
-
-      if(      mht > 200 && mht < 500 ) bin = 25;
-      else if( mht > 500 && mht < 750 ) bin = 26;
-      else if( mht > 750              ) bin = 27;
-
-    }
-
-  }
-
   return bin;
 }
 #endif

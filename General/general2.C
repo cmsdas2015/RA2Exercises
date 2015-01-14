@@ -73,7 +73,7 @@ void general2(unsigned int id, int nEvts = -1) {
 
   // Event yields in the different RA2 search bins
   // First bin (around 0) is baseline selection
-  TH1* hYields = new TH1D("hYields",";;N(events)",37,-0.5,36.5);
+  TH1* hYields = new TH1D("hYields",";;N(events)",5,-0.5,4.5);
   hYields->Sumw2();
   hYields->GetXaxis()->SetBinLabel(1,"baseline");
   for(int bin = 2; bin <= hYields->GetNbinsX(); ++bin) {
@@ -140,8 +140,7 @@ void general2(unsigned int id, int nEvts = -1) {
 
         double weight = 1.0;
         weight *= ntper.evtWeight;
-        weight *= scaleToLumi;
-
+        
     // Apply the NJets baseline-cut
         if( !Selection::nJets(selNJet) ) continue;
 

@@ -122,7 +122,7 @@ void general1(unsigned int id, int nEvts = -1) {
         if( selMuons != 0 ) continue;
         if( selElectrons !=0 ) continue;
 
-    // Calculate the jet-based RA2 selection variables
+	// Calculate the jet-based RA2 selection variables
         int selNJet = 0; // Number of jets with pt > 50 GeV and |eta| < 2.5 (`HT jets')
         double selHT = 0; // HT, computed from jets with pt > 50 GeV and |eta| < 2.5 (`HT jets')
         double selMHT = 0; // cmponents of MHT,  computed from jets with pt > 30 GeV (`MHT jets')
@@ -137,17 +137,15 @@ void general1(unsigned int id, int nEvts = -1) {
         selMHT = sqrt(selMHTx*selMHTx + selMHTy*selMHTy);
         double phiMHT = std::atan2(selMHTy, selMHTx);
 
-        vector<double> dphiVec = ntper.calcDPhi( (*ntper.jetsLVec), phiMHT, 3, dphiArr ); 
-
         double weight = 1.0;
         weight *= ntper.evtWeight;
         weight *= scaleToLumi;
 
-// Skipping one problematic QCD event in the low HT sample (MHT ~ 715.595 GeV)
+	// Skipping one problematic QCD event in the low HT sample (MHT ~ 715.595 GeV)
         if( id == 14 && is ==0 && ntper.run == 1 && ntper.lumi == 119397 && ntper.event == 11933645 ) continue;
-    //>>> PLACE DELTA PHI COMPUTATION HERE
+	//>>> PLACE DELTA PHI COMPUTATION HERE
 
-    // Fill histograms
+	// Fill histograms
         hNJets->Fill(selNJet, weight);
         hHt->Fill(selHT, weight);
         hMht->Fill(selMHT, weight);
@@ -157,7 +155,7 @@ void general1(unsigned int id, int nEvts = -1) {
            hJetEta.at(ih)->Fill(ntper.jetsLVec->at(ih).Eta(), weight);
            hJetPhi.at(ih)->Fill(ntper.jetsLVec->at(ih).Phi(), weight);
         }
-        for(unsigned int ih=0; ih < hDeltaPhi.size(); ++ih) hDeltaPhi[ih]->Fill(dphiVec[ih], weight);
+
      }
 
      if(chn) delete chn;
