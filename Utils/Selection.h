@@ -50,7 +50,8 @@ unsigned int Selection::searchBin(double ht, double mht, unsigned int nJets) {
       else if( mht > 800              ) bin = 4;
 
     }
-    
+
+  }    
   return bin;
 }
 #endif
