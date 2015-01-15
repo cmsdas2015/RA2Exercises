@@ -251,9 +251,9 @@ void lostLepton3(unsigned int id = 11,
 }
 
 double lostLeptonProb(double acc, double reco, double iso) {
-  return (1.-acc) + acc*(1.-reco) + acc*reco*(1.-iso);
+  return 1.; // to be fixed
 }
 
 double controlSampleCorr(double acc, double reco, double iso) {
-  return 1. / ( acc * reco * iso );
+  return 1.; // to be fixed
 }
